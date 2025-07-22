@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from models import db, User
+from models import db, User, ParkingLot, ParkingSpot, Reservation
 import os
 
 app = Flask(__name__)
@@ -76,7 +76,95 @@ def admin_dashboard():
         return redirect(url_for('login'))
     return render_template('admin_dashboard.html')
 
-@app.route('/user/dashboard')
+@app.route('/admin/lots')
+def admin_lots():
+    if session.get('role')!='admin':  
+        return redirect(url_for('login'))
+    lots = ParkingLot.query.all()
+    return render_template('admin_lots.html', lots=lots)
+
+# --- Create lot (auto-generate spots) ---
+@app.route('/admin/lots/create', methods=['GET','POST'])
+def create_lot():
+    if session.get('role')!='admin': return redirect(url_for('login'))
+    if request.method=='POST':
+        form = request.form
+        lot = ParkingLot(
+            prime_location_name=form['name'],
+            address=form['address'],
+            pincode=form['pincode'],
+            price_per_hour=float(form['price']),
+            max_spots=int(form['max_spots'])
+        )
+        db.session.add(lot); db.session.commit()
+        # auto-create spots
+        for i in range(lot.max_spots):
+            db.session.add(ParkingSpot(lot_id=lot.id))
+        db.session.commit()
+        flash('Parking lot created.')
+        return redirect(url_for('admin_lots'))
+    return render_template('edit_lot.html')
+
+# --- Edit lot & adjust spot count ---
+@app.route('/admin/lots/<int:lot_id>/edit', methods=['GET','POST'])
+def edit_lot(lot_id):
+    if session.get('role')!='admin': return redirect(url_for('login'))
+    lot = ParkingLot.query.get_or_404(lot_id)
+    if request.method=='POST':
+        form = request.form
+        lot.prime_location_name = form['name']
+        lot.address              = form['address']
+        lot.pincode              = form['pincode']
+        lot.price_per_hour       = float(form['price'])
+        new_max = int(form['max_spots'])
+        diff = new_max - lot.max_spots
+        if diff>0:
+            for _ in range(diff):
+                db.session.add(ParkingSpot(lot_id=lot.id))
+        elif diff<0:
+            # only delete available spots
+            extras = ParkingSpot.query.filter_by(lot_id=lot.id, status='A').limit(-diff)
+            for s in extras: db.session.delete(s)
+        lot.max_spots = new_max
+        db.session.commit()
+        flash('Parking lot updated.')
+        return redirect(url_for('admin_lots'))
+    return render_template('edit_lot.html', lot=lot)
+
+# --- Delete lot if empty ---
+@app.route('/admin/lots/<int:lot_id>/delete', methods=['POST'])
+def delete_lot(lot_id):
+    if session.get('role')!='admin': return redirect(url_for('login'))
+    lot = ParkingLot.query.get_or_404(lot_id)
+    occupied = ParkingSpot.query.filter_by(lot_id=lot.id, status='O').count()
+    if occupied:
+        flash('Cannot delete: some spots are occupied.')
+    else:
+        ParkingSpot.query.filter_by(lot_id=lot.id).delete()
+        db.session.delete(lot)
+        db.session.commit()
+        flash('Parking lot deleted.')
+    return redirect(url_for('admin_lots'))
+
+# --- View lot details & spot statuses ---
+@app.route('/admin/lots/<int:lot_id>')
+def lot_details(lot_id):
+    if session.get('role')!='admin': return redirect(url_for('login'))
+    lot = ParkingLot.query.get_or_404(lot_id)
+    spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
+    return render_template('lot_details.html', lot=lot, spots=spots)
+
+# --- List all users & their current spot (if any) ---
+@app.route('/admin/users')
+def admin_users():
+    if session.get('role')!='admin': return redirect(url_for('login'))
+    data = []
+    for u in User.query.all():
+        res = Reservation.query.filter_by(user_id=u.id, end_time=None).first()
+        data.append({'user': u, 'spot': res.spot if res else None})
+    return render_template('admin_users.html', data=data)
+
+@app.route('dashboard')
 def user_dashboard():
     if session.get('role') != 'user':
         return redirect(url_for('login'))
@@ -87,6 +175,7 @@ def logout():
     session.clear()
     flash('Logged out successfully.')
     return redirect(url_for('login'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -1,0 +1,15 @@
+{% extends "layout_a.html" %}
+
+{% block title %}Lot Details{% endblock %}
+
+{% block main %}
+<h1>{{ lot.prime_location_name }} Details</h1>
+<p>Address: {{ lot.address }}, {{ lot.pincode }}</p>
+<p>Price/hr: {{ lot.price_per_hour }}</p>
+<h2>Spots</h2>
+<ul>
+  {% for s in spots %}
+    <li>Spot {{ s.id }} – {{ 'Occupied' if s.status=='O' else 'Available' }}</li>
+  {% endfor %}
+</ul>
+{% endblock %}

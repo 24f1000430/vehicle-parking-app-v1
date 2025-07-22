@@ -1,0 +1,20 @@
+{% extends "layout_a.html" %}
+
+{% block title %}JParking Lots{% endblock %}
+
+{% block main %}
+<h1>Parking Lots</h1>
+<a href="{{ url_for('create_lot') }}">+ Create New Lot</a>
+<ul>
+  {% for lot in lots %}
+    <li>
+      {{ lot.prime_location_name }} ({{ lot.max_spots }} spots)
+      [<a href="{{ url_for('lot_details', lot_id=lot.id) }}">view</a>]
+      [<a href="{{ url_for('edit_lot', lot_id=lot.id) }}">edit</a>]
+      <form action="{{ url_for('delete_lot', lot_id=lot.id) }}" method="post" style="display:inline">
+        <button type="submit">delete</button>
+      </form>
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

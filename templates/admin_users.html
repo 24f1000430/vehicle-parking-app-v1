@@ -1,0 +1,14 @@
+{% extends "layout_a.html" %}
+
+{% block title %}Users{% endblock %}
+
+{% block main %}
+<h1>Registered Users</h1>
+<ul>
+  {% for row in data %}
+    <li>{{ row.user.full_name }} ({{ row.user.username }})
+      – Current Spot: {{ row.spot.id if row.spot else 'None' }}
+    </li>
+  {% endfor %}
+</ul>
+{% endblock %}

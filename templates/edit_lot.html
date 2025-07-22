@@ -1,0 +1,15 @@
+{% extends "layout_a.html" %}
+
+{% block title %}Parking Lots{% endblock %}
+
+{% block main %}
+<h1>{{ 'Edit' if lot else 'Create' }} Parking Lot</h1>
+<form method="post">
+  <input name="name"      placeholder="Name"    value="{{ lot.prime_location_name if lot else '' }}" required><br>
+  <input name="address"   placeholder="Address" value="{{ lot.address if lot else '' }}"><br>
+  <input name="pincode"   placeholder="Pincode" value="{{ lot.pincode if lot else '' }}"><br>
+  <input name="price"     placeholder="Price/hr" value="{{ lot.price_per_hour if lot else '' }}" required><br>
+  <input name="max_spots" placeholder="Max Spots" value="{{ lot.max_spots if lot else '' }}" required><br>
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

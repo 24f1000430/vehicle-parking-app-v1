@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html>
-<head><title>{% block title %}{% endblock %}</title></head>
+<head>
+  <title>{% block title %}{% endblock %}</title>
+</head>
 <body>
   {% block main %}
   {% endblock %}
+  <a href="/logout">Logout</a>
 </body>
 </html>
