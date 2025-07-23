@@ -164,7 +164,7 @@ def admin_users():
         data.append({'user': u, 'spot': res.spot if res else None})
     return render_template('admin_users.html', data=data)
 
-@app.route('dashboard')
+@app.route('/dashboard')
 def user_dashboard():
     if session.get('role') != 'user':
         return redirect(url_for('login'))
