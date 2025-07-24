@@ -1,0 +1,38 @@
+{% extends "layout.html" %}
+
+{%block title %}Register{% endblock %}
+
+{% block main%}
+
+<h1>My Parking</h1>
+
+{% if active %}
+  <h2>Current Spot</h2>
+  {% for i in active %}
+  <p>
+    Lot: {{ i.spot.lot.prime_location_name }}<br>
+    Spot #: {{ i.spot.id }}<br>
+    Since: {{ i.start_time }} UTC
+  </p>
+  <form action="{{ url_for('release_spot', res_id=i.id) }}" method="post">
+    <button type="submit">Release Spot</button>
+  </form>
+  {% endfor %}
+{% else %}
+  <p><em>No active reservation.</em></p>
+{% endif %}
+
+<h2>Parking History</h2>
+<ul>
+  {% for r in history %}
+    <li>
+      Lot: {{ r.spot.lot.prime_location_name }}, Spot #{{ r.spot.id }} —
+      In: {{ r.start_time }} UTC,
+      Out: {{ r.end_time }} UTC,
+      Cost: ₹{{ r.cost }}
+    </li>
+  {% endfor %}
+</ul>
+<a href="{{ url_for('user_lots') }}">Reserve New Spot</a> |
+<a href="{{ url_for('logout') }}">Logout</a>
+{% endblock %}

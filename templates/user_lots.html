@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{%block title %}Choose Lot{% endblock %}
+
+{% block main%}
+<h1>Available Parking Lots</h1>
+<ul>
+  {% for lot in lots %}
+    {% set avail = lot.spots|selectattr('status','equalto','A')|list|length %}
+    <li>
+      {{ lot.prime_location_name }} — ₹{{ lot.price_per_hour }}/hr —
+      {{ avail }} / {{ lot.max_spots }} available
+      {% if avail>0 %}
+        <form action="{{ url_for('reserve_spot', lot_id=lot.id) }}" method="post" style="display:inline">
+          <button type="submit">Reserve</button>
+        </form>
+      {% else %}
+        <em>Full</em>
+      {% endif %}
+    </li>
+  {% endfor %}
+</ul>
+<a href="{{ url_for('user_parking') }}">My Parking</a> |
+<a href="{{ url_for('logout') }}">Logout</a>
+{% endblock %}
