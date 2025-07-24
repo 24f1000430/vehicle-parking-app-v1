@@ -16,7 +16,7 @@ with app.app_context():
     db.create_all()
     if not User.query.filter_by(role='admin').first():
         admin = User(
-            full_name='Admin User',
+            full_name='Admin',
             username='admin@parking.com',
             password_hash=generate_password_hash('admin'),
             role='admin'
