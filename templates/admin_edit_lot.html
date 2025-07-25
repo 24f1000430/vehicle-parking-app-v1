@@ -3,13 +3,40 @@
 {% block title %}Parking Lots{% endblock %}
 
 {% block main %}
-<h1>{{ 'Edit' if lot else 'Create' }} Parking Lot</h1>
-<form method="post">
-  <input name="name" placeholder="Name" value="{{ lot.prime_location_name if lot else '' }}" required><br>
-  <input name="address" placeholder="Address" value="{{ lot.address if lot else '' }}"><br>
-  <input name="pincode" placeholder="Pincode" value="{{ lot.pincode if lot else '' }}"><br>
-  <input name="price" placeholder="Price/hr" value="{{ lot.price_per_hour if lot else '' }}" required><br>
-  <input name="max_spots" placeholder="Max Spots" value="{{ lot.max_spots if lot else '' }}" required><br>
-  <button type="submit">Save</button>
-</form>
+<div class="container d-flex mt-5 justify-content-center min-vh-100">
+  <div class="row w-100">
+    <div class="col-md-8 col-lg-6 mx-auto">
+      <div class="card shadow">
+        <div class="card-body">
+          <h2 class="card-title text-center mb-4">{{ 'Edit' if lot else 'Create' }} Parking Lot</h2>
+          <form method="post">
+            <div class="mb-3">
+              <label for="name" class="form-label">Name</label>
+              <input name="name" id="name" type="text" class="form-control" placeholder="Name" value="{{ lot.prime_location_name if lot else '' }}" required>
+            </div>
+            <div class="mb-3">
+              <label for="address" class="form-label">Address</label>
+              <input name="address" id="address" type="text" class="form-control" placeholder="Address" value="{{ lot.address if lot else '' }}">
+            </div>
+            <div class="mb-3">
+              <label for="pincode" class="form-label">Pincode</label>
+              <input name="pincode" id="pincode" type="text" class="form-control" placeholder="Pincode" value="{{ lot.pincode if lot else '' }}">
+            </div>
+            <div class="mb-3">
+              <label for="price" class="form-label">Price/hr</label>
+              <input name="price" id="price" type="number" step="0.01" class="form-control" placeholder="Price/hr" value="{{ lot.price_per_hour if lot else '' }}" required>
+            </div>
+            <div class="mb-3">
+              <label for="max_spots" class="form-label">Max Spots</label>
+              <input name="max_spots" id="max_spots" type="number" class="form-control" placeholder="Max Spots" value="{{ lot.max_spots if lot else '' }}" required>
+            </div>
+            <div class="d-grid text-center">
+              <button type="submit" class="btn btn-primary">Save</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
 {% endblock %}

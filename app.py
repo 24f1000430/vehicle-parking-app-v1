@@ -62,7 +62,6 @@ def login():
         if user and check_password_hash(user.password_hash, password):
             session['user_id'] = user.id
             session['role'] = user.role
-            flash('Login successful!')
             if user.role == 'admin':
                 return redirect(url_for('admin_dashboard'))
             else:
@@ -161,7 +160,7 @@ def lot_details(lot_id):
 def admin_users():
     if session.get('role')!='admin': return redirect(url_for('login'))
     data = []
-    for u in User.query.all():
+    for u in User.query.filter_by(role='user').all():
         res = Reservation.query.filter_by(user_id=u.id, end_time=None).first()
         data.append({'user': u, 'spot': res.spot if res else None})
     return render_template('admin_users.html', data=data)
@@ -247,7 +246,6 @@ def release_spot(res_id):
 @app.route('/logout')
 def logout():
     session.clear()
-    flash('Logged out successfully.')
     return redirect(url_for('login'))
 
 
