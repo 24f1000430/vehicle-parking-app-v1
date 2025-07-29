@@ -51,7 +51,7 @@ def register():
         flash('Registration successful.')
         return redirect(url_for('login'))
 
-    return render_template('register.html')
+    return render_template('register.html', role=session.get('role'))
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -69,12 +69,39 @@ def login():
                 return redirect(url_for('user_dashboard'))
         flash('Invalid credentials')
 
-    return render_template('login.html')
+    return render_template('login.html', role=session.get('role'))
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
+        # Fetch all lots
+    lots = ParkingLot.query.all()
+
+    # Compute revenue per lot
+    lot_names = []
+    revenues = []
+    for lot in lots:
+        # Sum cost of all completed reservations for spots in this lot
+        total = (
+            db.session.query(func.sum(Reservation.cost))
+            .join(ParkingSpot, Reservation.spot_id == ParkingSpot.id)
+            .filter(ParkingSpot.lot_id == lot.id, Reservation.cost != None)
+            .scalar()
+        ) or 0.0
+        lot_names.append(lot.prime_location_name)
+        revenues.append(round(total, 2))
+
+    # Compute average revenue across lots
+    avg_revenue = round(sum(revenues) / len(revenues), 2) if revenues else 0.0
+
+    return render_template(
+        'admin_dashboard.html',
+        lot_names=lot_names,
+        revenues=revenues,
+        avg_revenue=avg_revenue,
+        role=session.get('role')
+    )
     return render_template('admin_dashboard.html')
 
 @app.route('/admin/lots')
@@ -82,7 +109,7 @@ def admin_lots():
     if session.get('role')!='admin':  
         return redirect(url_for('login'))
     lots = ParkingLot.query.all()
-    return render_template('admin_lots.html', lots=lots)
+    return render_template('admin_lots.html', lots=lots, role=session.get('role'))
 
 # --- Create lot (auto-generate spots) ---
 @app.route('/admin/lots/create', methods=['GET','POST'])
@@ -105,7 +132,7 @@ def create_lot():
         db.session.commit()
         flash('Parking lot created.')
         return redirect(url_for('admin_lots'))
-    return render_template('admin_edit_lot.html')
+    return render_template('admin_edit_lot.html', role=session.get('role'))
 
 # --- Edit lot & adjust spot count ---
 @app.route('/admin/lots/<int:lot_id>/edit', methods=['GET','POST'])
@@ -131,7 +158,7 @@ def edit_lot(lot_id):
         db.session.commit()
         flash('Parking lot updated.')
         return redirect(url_for('admin_lots'))
-    return render_template('admin_edit_lot.html', lot=lot)
+    return render_template('admin_edit_lot.html', lot=lot, role=session.get('role'))
 
 # --- Delete lot if empty ---
 @app.route('/admin/lots/<int:lot_id>/delete', methods=['POST'])
@@ -164,13 +191,13 @@ def admin_users():
     for u in User.query.filter_by(role='user').all():
         res = Reservation.query.filter_by(user_id=u.id, end_time=None).first()
         data.append({'user': u, 'spot': res.spot if res else None})
-    return render_template('admin_users.html', data=data)
+    return render_template('admin_users.html', data=data, role=session.get('role'))
 
 @app.route('/dashboard')
 def user_dashboard():
     if session.get('role') != 'user':
         return redirect(url_for('login'))
-    return render_template('user_dashboard.html')
+    return render_template('user_dashboard.html', role=session.get('role'))
 
 # ----- List available lots -----
 @app.route('/lots')
@@ -179,7 +206,7 @@ def user_lots():
         return redirect(url_for('login'))
     # annotate with availability count
     lots = ParkingLot.query.all()
-    return render_template('user_lots.html', lots=lots)
+    return render_template('user_lots.html', lots=lots, role=session.get('role'))
 
 # ----- Reserve first available spot in a lot -----
 @app.route('/lots/<int:lot_id>/reserve', methods=['POST'])
@@ -220,7 +247,7 @@ def user_parking():
         Reservation.user_id==uid,
         Reservation.end_time!=None
     ).order_by(Reservation.start_time.desc()).all()
-    return render_template('user_parking.html', active=active, history=history)
+    return render_template('user_parking.html', active=active, history=history, role=session.get('role'))
 
 # ----- Release a spot -----
 @app.route('/parking/<int:res_id>/release', methods=['POST'])
@@ -243,6 +270,41 @@ def release_spot(res_id):
     db.session.commit()
     flash(f'Released spot #{res.spot.id}, cost: ₹{res.cost}')
     return redirect(url_for('user_parking'))
+
+@app.route('/profile', methods=['GET', 'POST'])
+def profile():
+    # Must be logged in
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+
+    user = User.query.get_or_404(session['user_id'])
+
+    if request.method == 'POST':
+        # Update full name
+        user.full_name = request.form['full_name']
+
+        # Update username/email if changed and not already taken
+        new_email = request.form['username']
+        if new_email != user.username:
+            if User.query.filter_by(username=new_email).first():
+                flash('Email already in use.', 'error')
+                return redirect(url_for('profile'))
+            user.username = new_email
+
+        # Update password if field non-empty
+        new_pw = request.form['password']
+        confirm_pw = request.form.get('confirm_password', '')
+        if new_pw:
+            if new_pw != confirm_pw:
+                flash('Passwords do not match.', 'error')
+                return redirect(url_for('profile'))
+            user.password_hash = generate_password_hash(new_pw)
+
+        db.session.commit()
+        flash('Profile updated successfully.', 'success')
+        return redirect(url_for('profile'))
+
+    return render_template('profile.html', user=user, role=session.get('role'))
 
 @app.route('/logout')
 def logout():

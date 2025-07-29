@@ -1,0 +1,5 @@
+body {
+  /*background-image: url('/static/bg2.jpg');*/
+  background: #090979;
+  background: linear-gradient(90deg, rgba(9, 9, 121, 1) 0%, rgba(0, 212, 255, 1) 100%);
+}
