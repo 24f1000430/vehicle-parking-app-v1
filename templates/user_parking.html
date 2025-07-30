@@ -35,7 +35,7 @@
               <thead class="table-light">
                 <tr>
                   <th scope="col">Lot</th>
-                  <th scope="col">Spot #</th>
+                  <th scope="col">Spot</th>
                   <th scope="col">In</th>
                   <th scope="col">Out</th>
                   <th scope="col">Cost</th>
@@ -45,7 +45,7 @@
                 {% for r in history %}
                 <tr>
                   <td>{{ r.spot.lot.prime_location_name }}</td>
-                  <td>{{ r.spot.id }}</td>
+                  <td>#{{ r.spot.id }}</td>
                   <td>{{ r.start_time }} UTC</td>
                   <td>{{ r.end_time }} UTC</td>
                   <td>₹{{ r.cost }}</td>
@@ -58,7 +58,6 @@
       </div>
       <div class="d-flex justify-content-between">
         <a href="{{ url_for('user_lots') }}" class="btn btn-outline-info">Reserve New Spot</a>
-        <a href="{{ url_for('logout') }}" class="btn btn-outline-secondary">Logout</a>
       </div>
     </div>
   </div>
