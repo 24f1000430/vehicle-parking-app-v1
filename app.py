@@ -1,7 +1,7 @@
 from flask import Flask, render_template, redirect, url_for, request, session, flash
 from werkzeug.security import generate_password_hash, check_password_hash
 from dotenv import load_dotenv
-from sqlalchemy import func
+from sqlalchemy import func, or_, and_
 from datetime import datetime
 from models import db, User, ParkingLot, ParkingSpot, Reservation
 import os
@@ -102,7 +102,6 @@ def admin_dashboard():
         avg_revenue=avg_revenue,
         role=session.get('role')
     )
-    return render_template('admin_dashboard.html')
 
 @app.route('/admin/lots')
 def admin_lots():
@@ -181,17 +180,62 @@ def lot_details(lot_id):
     if session.get('role')!='admin': return redirect(url_for('login'))
     lot = ParkingLot.query.get_or_404(lot_id)
     spots = ParkingSpot.query.filter_by(lot_id=lot.id).all()
-    return render_template('admin_lot_details.html', lot=lot, spots=spots)
+    return render_template('admin_lot_details.html', lot=lot, spots=spots, role=session.get('role'))
 
-# --- List all users & their current spot (if any) ---
+# --- List all users & their current spot ---
 @app.route('/admin/users')
 def admin_users():
-    if session.get('role')!='admin': return redirect(url_for('login'))
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+
     data = []
     for u in User.query.filter_by(role='user').all():
-        res = Reservation.query.filter_by(user_id=u.id, end_time=None).first()
-        data.append({'user': u, 'spot': res.spot if res else None})
+        reservations = Reservation.query.filter_by(user_id=u.id, end_time=None).all()
+        spots = [r.spot for r in reservations]
+        data.append({'user': u, 'spots': spots})
+    
     return render_template('admin_users.html', data=data, role=session.get('role'))
+
+# --- Search through lots and users ---
+
+@app.route('/admin/search')
+def admin_search():
+    if session.get('role') != 'admin':
+        return redirect(url_for('login'))
+    
+    q = request.args.get('q', '').strip()
+    user_q = User.query.filter_by(role='user')
+    user_q = user_q.outerjoin(Reservation,and_(Reservation.user_id == User.id, Reservation.end_time == None)
+    ).outerjoin(ParkingSpot, ParkingSpot.id == Reservation.spot_id)
+
+    if q:
+        filters = [
+            User.username.ilike(f'%{q}%'),
+            User.full_name.ilike(f'%{q}%'),]
+        if q.isdigit():
+            filters.append(ParkingSpot.id == int(q))
+        user_q = user_q.filter(or_(*filters))
+    users = user_q.all()
+
+    data = []
+    for u in users:
+        reservations = Reservation.query.filter_by(user_id=u.id, end_time=None).all()
+        spots = [r.spot for r in reservations]
+        data.append({'user': u, 'spots': spots})
+
+    lot_q = ParkingLot.query
+    if q:
+        lot_filters = [
+            ParkingLot.prime_location_name.ilike(f'%{q}%'),
+            ParkingLot.address.ilike(f'%{q}%'),
+            ParkingLot.pincode.ilike(f'%{q}%'),]
+        if q.isdigit():
+            lot_filters.append(ParkingLot.max_spots == int(q))
+
+        lot_q = lot_q.filter(or_(*lot_filters))
+    lots = lot_q.all()
+
+    return render_template('admin_search.html', data=data, lots=lots, role=session.get('role'), q=q)
 
 @app.route('/dashboard')
 def user_dashboard():

@@ -5,7 +5,7 @@
 {% block main %}
 <div class="container py-4">
   <div class="d-flex justify-content-between align-items-center mb-4">
-    <h1 class="mb-0">Parking Lots</h1>
+    <h1 class="text-white mb-0">Parking Lots</h1>
     <a href="{{ url_for('create_lot') }}" class="btn btn-success">+ Create New Lot</a>
   </div>
   <div class="table-responsive">
@@ -19,7 +19,7 @@
       </thead>
       <tbody>
         {% for lot in lots %}
-        <tr>
+        <tr class="table-light">
           <td>{{ lot.prime_location_name }}</td>
           <td>{{ lot.max_spots }}</td>
           <td>

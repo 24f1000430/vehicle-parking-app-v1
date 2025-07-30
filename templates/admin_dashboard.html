@@ -3,19 +3,16 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block main %}
-<h1>Welcome, Admin!</h1>
+<h2 class="text-white text-center mt-3">Revenue Distribution by Lot</h2>
+<!-- Smaller, fixed-size canvas: 300×200 px -->
+<canvas id="revenueChart" width="300" height="200"></canvas>
+<p class="text-white text-center">Average Revenue per Lot: ₹{{ avg_revenue }}</p>
 
-  <h2>Revenue Distribution by Lot</h2>
-  <!-- Smaller, fixed-size canvas: 300×200 px -->
-  <canvas id="revenueChart" width="300" height="200"></canvas>
-  
-  <p>Average Revenue per Lot: ₹{{ avg_revenue }}</p>
-
-  <!-- Pass data to the external script -->
-  <script>
-    window.chartData = {
-      labels: {{ lot_names | tojson }},
-      revenues: {{ revenues | tojson }}
-    };
+<!-- Pass data to the external script -->
+<script>
+  window.chartData = {
+    labels: {{ lot_names | tojson }},
+    revenues: {{ revenues | tojson }}
+  };
   </script>
 {% endblock %}
