@@ -3,5 +3,31 @@
 {% block title %}User Dashboard{% endblock %}
 
 {% block main %}
-  <h1>Welcome, User!</h1>
+<div class="container mt-4">
+    <div class="row justify-content-center">
+      <div class="col-auto text-center">
+        <div class="card p-3 shadow" style="min-width:420px; background:#fff; border-radius:16px;">
+          <h3 class="text-dark">Your Usage This Week</h3>
+          <canvas id="usageChart" width="400" height="260"></canvas>
+        </div>
+      </div>
+      <div class="col-auto text-center">
+        <div class="card p-3 shadow" style="min-width:420px; background:#fff; border-radius:16px;">
+          <h3 class="text-dark">Total Payments</h3>
+          <canvas id="paymentsChart" width="400" height="260"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      renderUserCharts({
+        usageLabels: {{ usage_labels | tojson }},
+        usageData: {{ usage_data | tojson }},
+        paymentLabels: {{ payment_labels | tojson }},
+        paymentData: {{ payment_data | tojson }}
+      });
+    });
+  </script>
 {% endblock %}

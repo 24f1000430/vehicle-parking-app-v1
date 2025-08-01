@@ -3,16 +3,32 @@
 {% block title %}Admin Dashboard{% endblock %}
 
 {% block main %}
-<h2 class="text-white text-center mt-3">Revenue Distribution by Lot</h2>
-<!-- Smaller, fixed-size canvas: 300×200 px -->
-<canvas id="revenueChart" width="300" height="200"></canvas>
-<p class="text-white text-center">Average Revenue per Lot: ₹{{ avg_revenue }}</p>
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-auto text-center">
+      <div class="card p-3 shadow" style="min-width:420px; background:#fff; border-radius:16px;">
+        <h2 class="text-dark">Revenue Distribution by Lot</h2>
+        <canvas id="revenueChart" width="400" height="260"></canvas>
+      </div>
+    </div>
+    <div class="col-auto text-center">
+      <div class="card p-3 shadow" style="min-width:420px; background:#fff; border-radius:16px;">
+        <h2 class="text-dark">Occupancy Rate</h2>
+        <canvas id="occupancyChart" width="400" height="260"></canvas>
+      </div>
+    </div>
+  </div>
+  <p class="text-white text-center mt-4">Average Revenue per Lot: ₹{{ avg_revenue }}</p>
+</div>
 
-<!-- Pass data to the external script -->
 <script>
-  window.chartData = {
-    labels: {{ lot_names | tojson }},
-    revenues: {{ revenues | tojson }}
-  };
-  </script>
+  document.addEventListener('DOMContentLoaded', function() {
+    renderAdminCharts({
+      revenueLabels: {{ lot_names | tojson }},
+      revenueData: {{ revenues | tojson }},
+      occupancyLabels: {{ occupancy_labels | tojson }},
+      occupancyData: {{ occupancy_data | tojson }}
+    });
+  });
+</script>
 {% endblock %}

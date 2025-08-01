@@ -10,7 +10,7 @@ app = Flask(__name__)
 load_dotenv()
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///parking_app.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY')
+app.config['SECRET_KEY'] = '7856'
 db.init_app(app)
 
 with app.app_context():
@@ -75,7 +75,7 @@ def login():
 def admin_dashboard():
     if session.get('role') != 'admin':
         return redirect(url_for('login'))
-        # Fetch all lots
+    # Fetch all lots
     lots = ParkingLot.query.all()
 
     # Compute revenue per lot
@@ -92,14 +92,35 @@ def admin_dashboard():
         lot_names.append(lot.prime_location_name)
         revenues.append(round(total, 2))
 
-    # Compute average revenue across lots
+    # average revenue across lots
     avg_revenue = round(sum(revenues) / len(revenues), 2) if revenues else 0.0
+
+    # Occupancy Rate (last 7 days)
+    from datetime import timedelta
+    today = datetime.utcnow().date()
+    occupancy_labels = []
+    occupancy_data = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        occupancy_labels.append(day.strftime('%a'))
+        total_spots = ParkingSpot.query.count()
+        occupied = (
+            db.session.query(Reservation)
+            .filter(
+                func.date(Reservation.start_time) <= day,
+                or_(Reservation.end_time == None, func.date(Reservation.end_time) >= day)
+            ).count()
+        )
+        occupancy_pct = round((occupied / total_spots) * 100, 2) if total_spots else 0
+        occupancy_data.append(occupancy_pct)
 
     return render_template(
         'admin_dashboard.html',
         lot_names=lot_names,
         revenues=revenues,
         avg_revenue=avg_revenue,
+        occupancy_labels=occupancy_labels,
+        occupancy_data=occupancy_data,
         role=session.get('role')
     )
 
@@ -110,7 +131,6 @@ def admin_lots():
     lots = ParkingLot.query.all()
     return render_template('admin_lots.html', lots=lots, role=session.get('role'))
 
-# --- Create lot (auto-generate spots) ---
 @app.route('/admin/lots/create', methods=['GET','POST'])
 def create_lot():
     if session.get('role')!='admin': return redirect(url_for('login'))
@@ -241,7 +261,43 @@ def admin_search():
 def user_dashboard():
     if session.get('role') != 'user':
         return redirect(url_for('login'))
-    return render_template('user_dashboard.html', role=session.get('role'))
+    from datetime import timedelta
+    uid = session['user_id']
+    today = datetime.utcnow().date()
+
+    # Usage this week (number of reservations per day)
+    usage_labels = []
+    usage_data = []
+    for i in range(6, -1, -1):
+        day = today - timedelta(days=i)
+        usage_labels.append(day.strftime('%a'))
+        count = Reservation.query.filter(
+            Reservation.user_id == uid,
+            func.date(Reservation.start_time) == day
+        ).count()
+        usage_data.append(count)
+
+    # Total payments (paid vs unpaid)
+    paid = db.session.query(func.sum(Reservation.cost)).filter(
+        Reservation.user_id == uid,
+        Reservation.cost != None
+    ).scalar() or 0.0
+    unpaid = db.session.query(func.count(Reservation.id)).filter(
+        Reservation.user_id == uid,
+        Reservation.cost == None
+    ).scalar() or 0
+
+    payment_labels = ["Paid", "Unpaid"]
+    payment_data = [round(paid, 2), unpaid]
+
+    return render_template(
+        'user_dashboard.html',
+        usage_labels=usage_labels,
+        usage_data=usage_data,
+        payment_labels=payment_labels,
+        payment_data=payment_data,
+        role=session.get('role')
+    )
 
 # ----- List available lots -----
 @app.route('/lots')
